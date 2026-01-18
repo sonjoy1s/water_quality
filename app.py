@@ -3,59 +3,102 @@ import pickle
 import pandas as pd
 import gradio as gr
 
-# Pickle model loading function
-
+# Load trained model
 with open("svc_water_model.pkl", "rb") as file:
     loaded_model = pickle.load(file)
 
 
-
-
-# Main Logic 
+# Prediction function
 def predict_water_quality(
-      ph, Hardness, Solids,Chloramines,Sulfate,Conductivity
-      ,Organic_carbon,Trihalomethanes,Turbidity,
+    ph, hardness, solids, chloramines, sulfate,
+    conductivity, organic_carbon, trihalomethanes, turbidity
 ):
-    input_data ={
+    input_df = pd.DataFrame({
         'ph': [ph],
-        'Hardness': [Hardness],
-        'Solids': [Solids],
-        'Chloramines': [Chloramines],
-        'Sulfate': [Sulfate],
-        'Conductivity': [Conductivity],
-        'Organic_carbon': [Organic_carbon],
-        'Trihalomethanes': [Trihalomethanes],
-        'Turbidity': [Turbidity]
-    }
-    input_df = pd.DataFrame(input_data)
-    prediction = loaded_model.predict(input_df)[0]
+        'Hardness': [hardness],
+        'Solids': [solids],
+        'Chloramines': [chloramines],
+        'Sulfate': [sulfate],
+        'Conductivity': [conductivity],
+        'Organic_carbon': [organic_carbon],
+        'Trihalomethanes': [trihalomethanes],
+        'Turbidity': [turbidity]
+    })
 
-    mapping ={
-        0: 'Not potable',
-        1: 'Potable'
-    } 
+    pred = loaded_model.predict(input_df)[0]
 
-    return mapping[prediction]
-
-#Interface part 
-apps = gr.Interface(
-    fn = predict_water_quality,
-    inputs = [
-        gr.Number(label="pH", value=7.0),
-        gr.Number(label="Hardness", value=200),
-        gr.Number(label="Solids (TDS)", value=20000),
-        gr.Number(label="Chloramines", value=7),
-        gr.Number(label="Sulfate", value=300),
-        gr.Number(label="Conductivity", value=400),
-        gr.Number(label="Organic Carbon", value=10),
-        gr.Number(label="Trihalomethanes", value=60),
-        gr.Number(label="Turbidity", value=4)
-    ],
-    outputs=gr.Textbox(label="Water Potability Prediction"),
-    title="Water Quality Potability Prediction",
-    description="Enter the water quality parameters to predict if the water is potable or not."
-)
+    return (
+        "✅ **Potable Water** – Safe for drinking"
+        if pred == 1
+        else "❌ **Not Potable** – Not safe for drinking"
+    )
 
 
-# Launch the app
-apps.launch(share=True)
+# Custom CSS (Glassmorphism)
+custom_css = """
+body {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+}
+
+.gradio-container {
+    max-width: 900px !important;
+    margin: auto;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    border-radius: 22px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+h1, h2, h3, label {
+    color: white !important;
+}
+
+footer {display: none;}
+"""
+
+
+# UI Layout
+with gr.Blocks(css=custom_css) as app:
+
+    gr.Markdown(
+        """
+        # 💧 Water Quality Potability Prediction
+        ### Machine Learning Based Water Safety Analysis  
+        Enter the chemical parameters of water to check if it is **safe for drinking**.
+        """
+    )
+
+    with gr.Row():
+        ph = gr.Number(label="pH", value=7.0)
+        hardness = gr.Number(label="Hardness", value=200)
+
+    with gr.Row():
+        solids = gr.Number(label="Solids (TDS)", value=20000)
+        chloramines = gr.Number(label="Chloramines", value=7)
+
+    with gr.Row():
+        sulfate = gr.Number(label="Sulfate", value=300)
+        conductivity = gr.Number(label="Conductivity", value=400)
+
+    with gr.Row():
+        organic_carbon = gr.Number(label="Organic Carbon", value=10)
+        trihalomethanes = gr.Number(label="Trihalomethanes", value=60)
+
+    turbidity = gr.Number(label="Turbidity", value=4)
+
+    predict_btn = gr.Button("🔍 Predict Water Quality", variant="primary")
+    output = gr.Markdown()
+
+    predict_btn.click(
+        predict_water_quality,
+        inputs=[
+            ph, hardness, solids, chloramines, sulfate,
+            conductivity, organic_carbon, trihalomethanes, turbidity
+        ],
+        outputs=output
+    )
+
+
+# Launch app
+app.launch(share=True)
