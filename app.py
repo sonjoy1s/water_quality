@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 import pandas as pd
 import gradio as gr
+from sklearn.svm import SVC
 
 # Load trained model
 with open("svc_water_model.pkl", "rb") as file:
